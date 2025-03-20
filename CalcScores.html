@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tính GPA</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f9ff;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      width: 90%;
+      max-width: 1000px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      font-size: 36px;
+      color: #2C3E50;
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      box-sizing: border-box;
+      background-color: #f7f9fc;
+    }
+    .search-results {
+      margin-top: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .search-result-item {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr 1fr;
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .search-result-item:hover {
+      background-color: #ecf6ff;
+    }
+    .search-result-item div {
+      padding: 5px;
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border: 1px solid #ddd;
+    }
+    th {
+      background-color: #3498db;
+      color: white;
+    }
+    .course {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .course button {
+      padding: 10px 20px;
+      border: none;
+      background-color: #2ecc71;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    .course button.remove {
+      background-color: #e74c3c;
+    }
+    .course button:hover {
+      opacity: 0.8;
+    }
+    .input-grade {
+      width: 80px;
+      padding: 5px;
+      margin: 0 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #f7f9fc;
+    }
+    .total {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 20px;
+    }
+    .total p {
+      margin: 5px 0;
+      font-weight: bold;
+      color: #2C3E50;
+    }
+    .btn-calculate {
+      background-color: #3498db;
+      padding: 12px 24px;
+      color: white;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .btn-calculate:hover {
+      background-color: #2980b9;
+    }
+    .table-container {
+      overflow-x: auto;
+    }
+    .btn-calculate:focus {
+      outline: none;
+    }
+    .course button:focus, .btn-calculate:focus {
+      outline: none;
+      box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+    }
+    .search-results-header {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr 1fr;
+      padding: 10px;
+      background-color: #3498db;
+      color: white;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Tính GPA</h1>
+
+    <!-- Tìm kiếm môn học -->
+    <input type="text" id="search" placeholder="Tìm kiếm môn học (theo mã hoặc tên)..." onkeyup="searchCourse()">
+    <div id="searchResults" class="search-results"></div>
+
+    <!-- Những môn đã đăng ký -->
+    <div id="enrolledCourses">
+      <h2>Những môn đã đăng ký</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Mã Môn</th>
+            <th>Tên Môn</th>
+            <th>Số Tín Chỉ</th>
+            <th>Điểm</th>
+            <th>Điểm Chữ Hệ 4</th>
+            <th>Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody id="enrolledList">
+          <!-- Các môn học đã đăng ký sẽ hiển thị ở đây -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tổng tín chỉ và Điểm trung bình -->
+    <div class="total">
+      <p>Tổng tín chỉ: <span id="totalCredits">0</span></p>
+      <p>Điểm trung bình (Hệ 10): <span id="avgGPA">0.0</span></p>
+      <p>Điểm trung bình (Hệ 4): <span id="avgGPA4">0.0</span></p>
+      <button class="btn-calculate" onclick="calculateTotal()">Tính điểm</button>
+    </div>
+  </div>
+
+  <script>
+    const enrolledCourses = []; // Dữ liệu về các môn học đã đăng ký
+    const availableCourses = [
+  { id: 'MT1003', name: 'Giải tích 1 - Calculus 1', credits: 4 },
+  { id: 'MT1005', name: 'Giải tích 2 - Calculus 2', credits: 4 },
+  { id: 'MT1007', name: 'Đại số tuyến tính - Linear Algebra', credits: 3 },
+  { id: 'MT2013', name: 'Xác suất và thống kê - Probability and Statistics', credits: 4 },
+  { id: 'CH1003', name: 'Hóa đại cương - General Chemistry', credits: 3 },
+  { id: 'PH1003', name: 'Vật lý 1 - General Physics 1', credits: 4 },
+  { id: 'PH1007', name: 'Thí nghiệm vật lý - General Physics Labs', credits: 1 },
+  { id: 'CO2011', name: 'Mô hình hóa toán học - Mathematical Modeling', credits: 3 },
+  { id: 'SP1007', name: 'Pháp luật Việt Nam đại cương - Introduction to Vietnamese Law', credits: 2 },
+  { id: 'SP1031', name: 'Triết học Mác - Lênin - Marxist - Leninist Philosophy', credits: 3 },
+  { id: 'SP1033', name: 'Kinh tế chính trị Mác - Lênin - Marxist - Leninist Political Economy', credits: 2 },
+  { id: 'SP1035', name: 'Chủ nghĩa xã hội khoa học - Scientific Socialism', credits: 2 },
+  { id: 'SP1037', name: 'Tư tưởng Hồ Chí Minh - Ho Chi Minh Ideology', credits: 2 },
+  { id: 'SP1039', name: 'Lịch sử Đảng Cộng sản Việt Nam - History of Vietnamese Communist Party', credits: 2 },
+  { id: 'CO1005', name: 'Nhập môn điện toán - Introduction to Computing', credits: 3 },
+  { id: 'IM1013', name: 'Kinh tế học đại cương - Economics', credits: 3 },
+  { id: 'IM1023', name: 'Quản lý sản xuất cho kỹ sư - Production and Operations Management for Engineers', credits: 3 },
+  { id: 'IM1025', name: 'Quản lý dự án cho kỹ sư - Project Management for Engineers', credits: 3 },
+  { id: 'IM1027', name: 'Kinh tế kỹ thuật - Engineering Economics', credits: 3 },
+  { id: 'IM3001', name: 'Quản trị kinh doanh cho kỹ sư - Business Administration for Engineers', credits: 3 },
+  { id: 'CO2001', name: 'Kỹ năng chuyên nghiệp cho kỹ sư - Professional Skills for Engineers', credits: 3 },
+  { id: 'LA1003', name: 'Anh văn 1 - English 1', credits: 2 },
+  { id: 'LA1005', name: 'Anh văn 2 - English 2', credits: 2 },
+  { id: 'LA1007', name: 'Anh văn 3 - English 3', credits: 2 },
+  { id: 'LA1009', name: 'Anh văn 4 - English 4', credits: 2 },
+  { id: 'CO1023', name: 'Hệ thống số - Digital Systems', credits: 3 },
+  { id: 'CO1025', name: 'Thiết kế luận lý với hdl - Logic Design with HDL', credits: 3 },
+  { id: 'CO1027', name: 'Kỹ thuật lập trình - Programming Fundamentals', credits: 3 },
+  { id: 'CO2003', name: 'Cấu trúc dữ liệu và giải thuật - Data Structures and Algorithms', credits: 4 },
+  { id: 'CO2007', name: 'Kiến trúc máy tính - Computer Architecture', credits: 4 },
+  { id: 'CO2013', name: 'Hệ cơ sở dữ liệu - Database Systems', credits: 4 },
+  { id: 'CO2037', name: 'Mạch điện - điện tử - Electrical Electronic Circuits', credits: 4 },
+  { id: 'CO2039', name: 'Lập trình nâng cao - Advanced Programming', credits: 3 },
+  { id: 'CO2017', name: 'Hệ điều hành - Operating Systems', credits: 3 },
+  { id: 'CO3001', name: 'Công nghệ phần mềm - Software Engineering', credits: 3 },
+  { id: 'CO3005', name: 'Nguyên lý ngôn ngữ lập trình - Principles of Programming Languages', credits: 4 },
+  { id: 'CO3007', name: 'Đánh giá hiệu năng hệ thống - System Performance Evaluation', credits: 3 },
+  { id: 'CO3009', name: 'Vi xử lý - vi điều khiển - Microprocessors-Microcontrollers', credits: 3 },
+  { id: 'CO3053', name: 'Hệ thống nhúng - Embedded System', credits: 3 },
+  { id: 'CO3091', name: 'Đồ án môn học thiết kế luận lý - Logic Design Project', credits: 2 },
+  { id: 'CO3093', name: 'Mạng máy tính - Computer Networks', credits: 3 },
+  { id: 'CO3097', name: 'Thiết kế vi mạch - LSI Logic Design', credits: 3 },
+  { id: 'CO3101', name: 'Đồ án tổng hợp - hướng trí tuệ nhân tạo - Programming Integration Project', credits: 1 },
+  { id: 'CO3103', name: 'Đồ án tổng hợp - hướng công nghệ phần mềm - Programming Integration Project', credits: 1 },
+  { id: 'CO3105', name: 'Đồ án tổng hợp - hướng hệ thống thông tin - Programming Integration Project', credits: 1 },
+  { id: 'CO3127', name: 'Đồ án tổng hợp - hướng kỹ thuật dữ liệu - Programming Integration Project - Data Engineering', credits: 1 },
+  { id: 'CO3107', name: 'Thực tập đồ án môn học đa ngành - hướng trí tuệ nhân tạo - Multidisciplinary Project', credits: 1 },
+  { id: 'CO3109', name: 'Thực tập đồ án môn học đa ngành - hướng công nghệ phần mềm - Multidisciplinary Project', credits: 1 },
+  { id: 'CO3111', name: 'Thực tập đồ án môn học đa ngành - hướng hệ thống thông tin - Multidisciplinary Project', credits: 1 },
+  { id: 'CO3011', name: 'Quản lý dự án phần mềm - Software Project Management', credits: 3 },
+  { id: 'CO3013', name: 'Xây dựng chương trình dịch - Compiler Construction', credits: 3 },
+  { id: 'CO3015', name: 'Kiểm tra phần mềm - Software Testing', credits: 3 },
+  { id: 'CO3017', name: 'Kiến trúc phần mềm - Software Architecture', credits: 3 },
+  { id: 'CO3021', name: 'Hệ quản trị cơ sở dữ liệu - Database Management Systems', credits: 3 },
+  { id: 'CO3023', name: 'Cơ sở dữ liệu phân tán và hướng đối tượng - Distributed and Object-Oriented Databases', credits: 3 },
+  { id: 'CO3027', name: 'Thương mại điện tử - Electronic Commerce', credits: 3 },
+  { id: 'CO3029', name: 'Khai phá dữ liệu - Data Mining', credits: 3 },
+  { id: 'CO3031', name: 'Phân tích và thiết kế giải thuật - Algorithms-Design and Analysis', credits: 3 },
+  { id: 'CO3033', name: 'Bảo mật hệ thống thông tin - Information System Security', credits: 3 },
+  { id: 'CO3035', name: 'Hệ thời gian thực - Real-Time Systems', credits: 3 },
+  { id: 'CO3037', name: 'Phát triển ứng dụng internet of things - Internet of Things Application Development', credits: 3 },
+  { id: 'CO3041', name: 'Hệ thống thông minh - Intelligent Systems', credits: 3 },
+  { id: 'CO3043', name: 'Phát triển ứng dụng trên thiết bị di động - Mobile Application Development', credits: 3 },
+  { id: 'CO3045', name: 'Lập trình game - Game Programming', credits: 3 },
+  { id: 'CO3047', name: 'Mạng máy tính nâng cao - Advanced Computer Networks', credits: 3 },
+  { id: 'CO3049', name: 'Lập trình web - Web Programming', credits: 3 },
+  { id: 'CO3051', name: 'Hệ thống thiết bị di động - Mobile Systems', credits: 3 },
+  { id: 'CO3057', name: 'Xử lý ảnh số và thị giác máy tính - Digital Image Processing and Computer Vision', credits: 3 },
+  { id: 'CO3059', name: 'Đồ họa máy tính - Computer Graphics', credits: 3 },
+  { id: 'CO3061', name: 'Nhập môn trí tuệ nhân tạo - Introduction to Artificial Intelligence', credits: 3 },
+  { id: 'CO3065', name: 'Công nghệ phần mềm nâng cao - Advanced Software Engineering', credits: 3 },
+  { id: 'CO3067', name: 'Tính toán song song - Parallel Computing', credits: 3 },
+  { id: 'CO3069', name: 'Mật mã và an ninh mạng - Cryptography and Network Security', credits: 3 },
+  { id: 'CO3071', name: 'Hệ phân bố - Distributed Systems', credits: 3 },
+  { id: 'CO3083', name: 'Mật mã học và mã hóa thông tin - Advance Cryptography and Coding Theory', credits: 3 },
+  { id: 'CO3085', name: 'Xử lý ngôn ngữ tự nhiên - Natural Language Processing', credits: 3 },
+  { id: 'CO3089', name: 'Những chủ đề nâng cao trong khoa học máy tính - Selected Topics in High Performance Computing', credits: 3 },
+  { id: 'CO3115', name: 'Phân tích và thiết kế hệ thống - Systems Analysis and Design', credits: 3 },
+  { id: 'CO3117', name: 'Học máy - Machine Learning', credits: 3 },
+  { id: 'CO4025', name: 'Mạng xã hội và thông tin - Information and Social Networks', credits: 3 },
+  { id: 'CO4031', name: 'Kho dữ liệu và hệ hỗ trợ quyết định - Data Warehouses and Decision Support Systems', credits: 3 },
+  { id: 'CO4033', name: 'Phân tích dữ liệu lớn và trí tuệ kinh doanh - Big Data Analytics and Business Intelligence', credits: 3 },
+  { id: 'CO4035', name: 'Hệ hoạch định tài nguyên tổ chức - Enterprise Resource Planning Systems', credits: 3 },
+  { id: 'CO4037', name: 'Hệ thống thông tin quản lý - Management Information Systems', credits: 3 },
+  { id: 'CO4039', name: 'Bảo mật sinh trắc - Biometric Security', credits: 3 },
+  { id: 'CO3335', name: 'Thực tập ngoài trường - Internship', credits: 2 },
+  { id: 'CO4029', name: 'Đồ án chuyên ngành - Specialized Project', credits: 2 },
+  { id: 'CO4337', name: 'Đồ án tốt nghiệp (Khoa học Máy tính) - Capstone Project', credits: 4 }
+];
+
+    // Hàm chuyển đổi điểm hệ 10 sang hệ 4 với điểm chữ
+    function convertToGPA4(grade) {
+      let gpa;
+      let letterGrade;
+      if (grade > 10.0) {gpa = 0.0; letterGrade = 'F'; }
+      else if (grade >= 9.5) { gpa = 4.0; letterGrade = 'A+'; }
+      else if (grade >= 8.5) { gpa = 4.0; letterGrade = 'A'; }
+      else if (grade >= 8.0) { gpa = 3.5; letterGrade = 'B+'; }
+      else if (grade >= 7.0) { gpa = 3.0; letterGrade = 'B'; }
+      else if (grade >= 6.5) { gpa = 2.5; letterGrade = 'C+'; }
+      else if (grade >= 5.5) { gpa = 2.0; letterGrade = 'C'; }
+      else if (grade >= 5.0) { gpa = 1.5; letterGrade = 'D+'; }
+      else if (grade >= 4.0) { gpa = 1.0; letterGrade = 'D'; }
+      else { gpa = 0.0; letterGrade = 'F'; }
+
+      return { gpa: gpa.toFixed(1), letterGrade: letterGrade };
+    }
+
+    // Hàm tìm kiếm môn học theo mã hoặc tên
+    function searchCourse() {
+      const searchTerm = document.getElementById('search').value.toLowerCase().trim(); // Xử lý trim để loại bỏ khoảng trắng thừa
+      const resultsDiv = document.getElementById('searchResults');
+      resultsDiv.innerHTML = ''; // Xóa kết quả tìm kiếm cũ
+
+      // Tạo tiêu đề cho danh sách gợi ý
+      const headerDiv = document.createElement('div');
+      headerDiv.classList.add('search-results-header');
+      headerDiv.innerHTML = ` 
+        <div>Mã Môn</div>
+        <div>Tên Môn</div>
+        <div>Số Tín Chỉ</div>
+        <div>Thao Tác</div>
+      `;
+      resultsDiv.appendChild(headerDiv);
+
+      // Lọc danh sách môn học theo mã hoặc tên
+      const filteredCourses = availableCourses.filter(course => 
+        course.name.toLowerCase().includes(searchTerm) || 
+        course.id.toLowerCase().includes(searchTerm) // Đảm bảo mã môn học và tên đều là chữ thường
+      );
+
+      // Hiển thị kết quả tìm kiếm
+      filteredCourses.forEach(course => {
+        const courseDiv = document.createElement('div');
+        courseDiv.classList.add('search-result-item');
+        courseDiv.innerHTML = `
+          <div>${course.id}</div>
+          <div>${course.name}</div>
+          <div>${course.credits}</div>
+          <div><button onclick="addCourse('${course.id}', '${course.name}', ${course.credits})">Thêm</button></div>
+        `;
+        resultsDiv.appendChild(courseDiv);
+      });
+    }
+
+    // Hàm thêm môn học vào danh sách đã đăng ký
+    function addCourse(id, name, credits) {
+      enrolledCourses.push({ id, name, credits, grade: 0 });
+      renderEnrolledCourses();
+      document.getElementById('search').value = ''; // Xóa ô tìm kiếm sau khi thêm môn học
+      document.getElementById('searchResults').innerHTML = ''; // Xóa kết quả tìm kiếm
+    }
+
+    // Hàm xóa môn học khỏi danh sách đã đăng ký
+    function removeCourse(index) {
+      enrolledCourses.splice(index, 1);
+      renderEnrolledCourses();
+    }
+
+    // Hàm hiển thị danh sách các môn đã đăng ký
+    function renderEnrolledCourses() {
+      const enrolledList = document.getElementById('enrolledList');
+      enrolledList.innerHTML = '';
+
+      enrolledCourses.forEach((course, index) => {
+        const { gpa, letterGrade } = convertToGPA4(course.grade);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${course.id}</td>
+          <td>${course.name}</td>
+          <td>${course.credits}</td>
+          <td><input type="number" class="input-grade" min="0" max="10" value="${course.grade}" onchange="updateGrade(${index}, this.value)"></td>
+          <td>${letterGrade} (${gpa})</td>
+          <td><button class="remove" onclick="removeCourse(${index})">Xóa</button></td>
+        `;
+        enrolledList.appendChild(row);
+      });
+    }
+
+    // Hàm cập nhật điểm của môn học
+    function updateGrade(index, value) {
+      enrolledCourses[index].grade = parseFloat(value);
+      renderEnrolledCourses();
+    }
+
+    // Hàm tính tổng điểm và GPA
+    function calculateTotal() {
+      let totalCredits = 0;
+      let weightedSum = 0;
+      let weightedSum4 = 0;
+
+      enrolledCourses.forEach(course => {
+        totalCredits += course.credits;
+        if (course.grade<=10 && course.grade>=0) {weightedSum += course.grade * course.credits;}
+        weightedSum4 += convertToGPA4(course.grade).gpa * course.credits;
+      });
+
+      const avgGPA = Math.round((weightedSum / totalCredits) * 10) / 10; // Làm tròn điểm trung bình hệ 10
+      const avgGPA4 = Math.round((weightedSum4 / totalCredits) * 10) / 10; // Làm tròn điểm trung bình hệ 4
+
+      document.getElementById('totalCredits').innerText = totalCredits;
+      document.getElementById('avgGPA').innerText = avgGPA;
+      document.getElementById('avgGPA4').innerText = avgGPA4;
+    }
+  </script>
+
+</body>
+</html>
